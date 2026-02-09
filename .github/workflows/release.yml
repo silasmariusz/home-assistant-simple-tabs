@@ -1,0 +1,33 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  release:
+    name: Create Release Asset
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build the production file
+        run: npm run build
+
+      - name: Upload the card to the release
+        uses: svenstaro/upload-release-action@v2 # Use a modern version of the upload action
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: dist/simple-tabs.js           # Corrected path to your built file
+          asset_name: simple-tabs.js          # Corrected name for the release asset
+          tag: ${{ github.ref }}
+          overwrite: true
