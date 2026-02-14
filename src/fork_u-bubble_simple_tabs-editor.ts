@@ -307,11 +307,13 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
     const stub = CARD_TYPE_STUBS[cardType] || { type: cardType };
     const newTabs = [...this._config.tabs];
     const tab = newTabs[tabIndex];
+    const base = { title: tab.title, icon: tab.icon, id: tab.id, badge: tab.badge, conditions: tab.conditions };
     if ('card' in tab) {
-      newTabs[tabIndex] = { ...tab, card: stub };
+      newTabs[tabIndex] = { ...base, card: stub } as TabConfigSingleCard;
     } else if ('cards' in tab && tab.cards.length === 1) {
-      newTabs[tabIndex] = { ...tab, card: stub, cards: undefined } as TabConfigSingleCard;
-      delete (newTabs[tabIndex] as any).cards;
+      newTabs[tabIndex] = { ...base, card: stub } as TabConfigSingleCard;
+    } else if ('cards' in tab) {
+      newTabs[tabIndex] = { ...base, cards: [stub, ...tab.cards.slice(1)] } as TabConfigMultiCard;
     }
     this._valueChanged({ ...this._config, tabs: newTabs });
   }
