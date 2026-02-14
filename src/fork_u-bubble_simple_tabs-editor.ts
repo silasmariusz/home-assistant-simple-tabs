@@ -1,5 +1,5 @@
 import { LitElement, html, css, TemplateResult } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { customElement, property, state, query } from 'lit/decorators.js';
 import { fireEvent, HomeAssistant } from 'custom-card-helpers';
 import { TabsCardConfig, TabConfig, TabConfigSingleCard, TabConfigMultiCard } from './fork_u-bubble_simple_tabs';
 import { LovelaceCardConfig } from 'custom-card-helpers/dist/types';
@@ -64,21 +64,6 @@ interface HaIconButton extends HTMLElement {
   disabled: boolean;
 }
 
-/** Stub configs for common card types when adding a new tab visually */
-const CARD_TYPE_STUBS: Record<string, LovelaceCardConfig> = {
-  'markdown': { type: 'markdown', content: '## New tab' },
-  'entity': { type: 'entity', entity: '' },
-  'entities': { type: 'entities', entities: [] },
-  'vertical-stack': { type: 'vertical-stack', cards: [] },
-  'horizontal-stack': { type: 'horizontal-stack', cards: [] },
-  'glance': { type: 'glance', entities: [] },
-  'picture': { type: 'picture', image: '' },
-  'map': { type: 'map', default_zoom: 14 },
-  'history-graph': { type: 'history-graph', entities: [], hours_to_show: 24 },
-  'thermostat': { type: 'thermostat', entity: '' },
-  'button': { type: 'button', name: 'Button', tap_action: { action: 'none' } },
-  'conditional': { type: 'conditional', conditions: [], card: { type: 'markdown', content: '' } },
-};
 
 function stringifyCard(card: LovelaceCardConfig | string | undefined): string {
   if (!card) return '';
@@ -105,12 +90,18 @@ function stringifyCard(card: LovelaceCardConfig | string | undefined): string {
 @customElement('fork-u-bubble-simple-tabs-editor')
 export class ForkUBubbleSimpleTabsEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public lovelace?: any;
   @state() private _config?: TabsCardConfig;
   @state() private _helpers?: any;
   @state() private _collapsedCards: Set<string> = new Set();
-  /** Visual editor: 'list' = tab strip with +, 'edit' = editing one tab */
   @state() private _editorView: 'list' | 'edit' = 'list';
   @state() private _editingTabIndex = 0;
+  @state() private _stackEditorReady = false;
+  @query('#stack-editor-host') private _stackEditorHost?: HTMLDivElement;
+  private _stackEditorEl: HTMLElement | null = null;
+  private _stackEditorResolve?: (el: HTMLElement) => void;
+  private _stackEditorPromise: Promise<HTMLElement> | null = null;
+  private _stackEditorBoundTabIndex = -1;
   private _initialized = false;
 
   public setConfig(config: TabsCardConfig): void {
@@ -226,7 +217,7 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
       delete (multiCardTab as any).card;
       newTabs[tabIndex] = multiCardTab;
     } else if ('cards' in tab) {
-      newTabs[tabIndex] = { ...tab, cards: [...tab.cards, { type: 'markdown', content: 'New card content' }] };
+      newTabs[tabIndex] = { ...tab, cards: [...(tab.cards || []), { type: 'markdown', content: 'New card content' }] };
     }
     this._valueChanged({ ...this._config, tabs: newTabs });
   }
@@ -301,21 +292,74 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
     this._editorView = 'edit';
   }
 
-  /** Change card type for the current tab (replaces card with stub) */
-  private _changeCardType(tabIndex: number, cardType: string): void {
-    if (!this._config) return;
-    const stub = CARD_TYPE_STUBS[cardType] || { type: cardType };
-    const newTabs = [...this._config.tabs];
-    const tab = newTabs[tabIndex];
-    const base = { title: tab.title, icon: tab.icon, id: tab.id, badge: tab.badge, conditions: tab.conditions };
-    if ('card' in tab) {
-      newTabs[tabIndex] = { ...base, card: stub } as TabConfigSingleCard;
-    } else if ('cards' in tab && tab.cards.length === 1) {
-      newTabs[tabIndex] = { ...base, card: stub } as TabConfigSingleCard;
-    } else if ('cards' in tab) {
-      newTabs[tabIndex] = { ...base, cards: [stub, ...tab.cards.slice(1)] } as TabConfigMultiCard;
+  private async _getStackConfigElement(): Promise<HTMLElement> {
+    if (this._stackEditorPromise) return this._stackEditorPromise;
+    this._stackEditorPromise = new Promise(async (resolve) => {
+      let cls = customElements.get('hui-vertical-stack-card');
+      if (!cls) {
+        const helpers = await window.loadCardHelpers?.();
+        if (helpers) helpers.createCardElement({ type: 'vertical-stack', cards: [] });
+        await customElements.whenDefined('hui-vertical-stack-card');
+        cls = customElements.get('hui-vertical-stack-card');
+      }
+      if (!cls) {
+        console.error('[Fork U-Bubble Simple Tabs] Could not load hui-vertical-stack-card');
+        resolve(document.createElement('div'));
+        return;
+      }
+      const configEl = await (cls as any).getConfigElement?.();
+      if (configEl?.setConfig) {
+        const orig = configEl.setConfig.bind(configEl);
+        configEl.setConfig = (cfg: any) =>
+          orig({ type: 'vertical-stack', title: cfg?.title, cards: cfg?.cards ?? [] });
+      }
+      resolve(configEl || document.createElement('div'));
+    });
+    return this._stackEditorPromise;
+  }
+
+  private _tabCardsToStackCards(tab: TabConfig): LovelaceCardConfig[] {
+    if ('cards' in tab && Array.isArray(tab.cards)) return [...tab.cards];
+    if ('card' in tab && tab.card) return [tab.card];
+    return [{ type: 'markdown', content: '## New tab' }];
+  }
+
+  protected async updated(changedProperties: Map<string, unknown>): Promise<void> {
+    if (this._editorView === 'edit' && this._stackEditorHost && this._config) {
+      const tab = this._config.tabs[this._editingTabIndex];
+      if (!tab) return;
+      if (this._stackEditorBoundTabIndex !== this._editingTabIndex || !this._stackEditorEl) {
+        this._stackEditorBoundTabIndex = this._editingTabIndex;
+        const el = await this._getStackConfigElement();
+        this._stackEditorEl = el;
+        while (this._stackEditorHost.firstChild) this._stackEditorHost.removeChild(this._stackEditorHost.firstChild);
+        this._stackEditorHost.appendChild(el);
+        const onConfigChanged = (ev: Event): void => {
+          const detail = (ev as CustomEvent).detail;
+          if (!detail?.config || !this._config) return;
+          const cards: LovelaceCardConfig[] = detail.config.cards ?? [];
+          const newTabs = [...this._config.tabs];
+          const t = newTabs[this._editingTabIndex];
+          const base = { title: t.title, icon: t.icon, id: t.id, badge: t.badge, conditions: t.conditions };
+          if (cards.length === 1) {
+            newTabs[this._editingTabIndex] = { ...base, card: cards[0] } as TabConfigSingleCard;
+          } else {
+            newTabs[this._editingTabIndex] = { ...base, cards } as TabConfigMultiCard;
+          }
+          this._valueChanged({ ...this._config, tabs: newTabs });
+        };
+        el.removeEventListener('config-changed', onConfigChanged);
+        el.addEventListener('config-changed', onConfigChanged);
+        (el as any).hass = this.hass;
+        (el as any).lovelace = this.lovelace;
+        (el as any).setConfig?.({ type: 'vertical-stack', cards: this._tabCardsToStackCards(tab) });
+        this._stackEditorReady = true;
+      } else {
+        (this._stackEditorEl as any).setConfig?.({ type: 'vertical-stack', cards: this._tabCardsToStackCards(tab) });
+      }
+    } else {
+      this._stackEditorBoundTabIndex = -1;
     }
-    this._valueChanged({ ...this._config, tabs: newTabs });
   }
 
   protected render(): TemplateResult {
@@ -428,9 +472,6 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
   }
 
   private _renderEditTab(index: number, tab: TabConfig): TemplateResult {
-    const cardConfig = this._getTabCard(tab);
-    const cardType = cardConfig?.type || 'markdown';
-
     return html`
       <div class="edit-tab-panel">
         <div class="global-options" style="margin-bottom: 16px;">
@@ -441,23 +482,9 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
             <ha-textfield .label=${'Tab ID (deep link)'} .value=${tab.id || ''} .name=${'id'} @input=${(e: Event) => this._handleTabChange(e, index)}></ha-textfield>
           </div>
           <ha-textfield .label=${'Badge (Jinja)'} .value=${tab.badge || ''} .name=${'badge'} @input=${(e: Event) => this._handleTabChange(e, index)}></ha-textfield>
-          <label style="display: block; margin-top: 12px;">Card type</label>
-          <select
-            class="card-type-select"
-            .value=${Object.keys(CARD_TYPE_STUBS).includes(cardType) ? cardType : 'markdown'}
-            @change=${(e: Event) => this._changeCardType(index, (e.target as HTMLSelectElement).value)}
-          >
-            ${Object.keys(CARD_TYPE_STUBS).map(t => html`<option value="${t}">${t}</option>`)}
-          </select>
-          ${!Object.keys(CARD_TYPE_STUBS).includes(cardType) ? html`<p class="field-desc">Current type: ${cardType} (edit YAML below for custom cards)</p>` : ''}
-          <p style="margin-top: 8px;">Card content (YAML):</p>
-          <ha-yaml-editor
-            .hass=${this.hass}
-            .name=${'card'}
-            .defaultValue=${stringifyCard(cardConfig)}
-            @value-changed=${(e: Event) => this._handleTabChange(e, index)}
-          ></ha-yaml-editor>
         </div>
+        <h3 style="margin: 16px 0 8px 0;">Cards (click + to add, scrollable list)</h3>
+        <div id="stack-editor-host" class="stack-editor-host"></div>
       </div>
     `;
   }
@@ -616,7 +643,13 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
     .reorder-btn { cursor: pointer; color: var(--secondary-text-color); }
     .reorder-btn[disabled] { opacity: 0.3; pointer-events: none; }
     .edit-tab-panel { padding: 0; }
-    .card-type-select { width: 100%; margin-top: 8px; padding: 8px; }
+    .stack-editor-host {
+      min-height: 200px;
+      border: 1px solid var(--divider-color);
+      border-radius: 8px;
+      padding: 8px;
+      background: var(--card-background-color, var(--sidebar-background-color));
+    }
     .card-block { margin-bottom: 6px; padding: 6px; border: 1px solid var(--divider-color); border-radius: 8px; box-sizing: border-box; overflow: hidden; }
     .card-block-header {
       display: flex; justify-content: space-between; align-items: center; cursor: pointer;

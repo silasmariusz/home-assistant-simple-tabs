@@ -1,4 +1,11 @@
 import './fork_u-bubble_simple_tabs-editor';
+
+console.log(
+  `%cFork U-Bubble Simple Tabs\n%cLoaded successfully (v1.2.0)`,
+  'color: #1976d2; font-weight: bold; font-size: 12px;',
+  'color: #666;'
+);
+
 import { LitElement, html, css, TemplateResult, PropertyValues } from 'lit';
 import { customElement, property, state, query } from 'lit/decorators.js';
 import { styleMap } from 'lit/directives/style-map.js';
