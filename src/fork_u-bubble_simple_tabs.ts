@@ -15,7 +15,7 @@ import type {
   LovelaceCardConfig,
   LovelaceCardEditor,
 } from 'custom-card-helpers';
-import { fireEvent } from 'custom-card-helpers';
+import { forwardHaptic } from 'custom-card-helpers';
 
 // --- CONFIG CHECKER ---
 function configChanged(oldConfig: TabsCardConfig | undefined, newConfig: TabsCardConfig): boolean {
@@ -36,7 +36,7 @@ function configChanged(oldConfig: TabsCardConfig | undefined, newConfig: TabsCar
       tab.id !== newTab.id ||
       tab.badge !== newTab.badge ||
       !cardEqual || !cardsEqual ||
-      JSON.stringify(tab.conditions) !== JSON.stringify(tab.conditions);
+      JSON.stringify(tab.conditions) !== JSON.stringify(newTab.conditions);
   });
 }
 
@@ -215,11 +215,11 @@ export class ForkUBubbleSimpleTabs extends LitElement {
     requestAnimationFrame(() => this._checkDeepLink());
   };
 
-  /** Haptic feedback: use HA's event (iOS-friendly) then fallback to vibrate */
+  /** Haptic feedback: forwardHaptic fires on window (Companion app listens) + vibrate fallback */
   private _triggerHaptic(): void {
     if (!this._config?.haptic_feedback) return;
     try {
-      fireEvent(this, 'haptic', 'light');
+      forwardHaptic('light');
     } catch {}
     if ('vibrate' in navigator) {
       navigator.vibrate(10);
