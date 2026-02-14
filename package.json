@@ -1,10 +1,10 @@
 {
-  "name": "simple-tabs-card",
-  "version": "1.1.9",
-  "description": "A simple, configurable tabs card for Home Assistant.",
-  "main": "dist/simple-tabs.js",
-  "module": "dist/simple-tabs.js",
-  "author": "Your Name",
+  "name": "fork-u-bubble-simple-tabs",
+  "version": "1.2.0",
+  "description": "Fork U-Bubble Simple Tabs - tabbed card for Home Assistant with visual editor, styling CSS, haptic and URL support.",
+  "main": "dist/fork_u-bubble_simple_tabs.js",
+  "module": "dist/fork_u-bubble_simple_tabs.js",
+  "author": "Fork U-Bubble",
   "license": "MIT",
   "type": "module",
   "scripts": {

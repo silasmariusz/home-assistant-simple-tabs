@@ -27,7 +27,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2 # Use a modern version of the upload action
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: dist/simple-tabs.js           # Corrected path to your built file
-          asset_name: simple-tabs.js          # Corrected name for the release asset
+          file: dist/fork_u-bubble_simple_tabs.js
+          asset_name: fork_u-bubble_simple_tabs.js
           tag: ${{ github.ref }}
           overwrite: true

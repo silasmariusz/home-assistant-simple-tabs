@@ -1,6 +1,6 @@
-# Simple Tabs Card
+# Fork U-Bubble Simple Tabs
 
-A clean and configurable tabs card for Home Assistant Dashboards.
+A tabbed card for Home Assistant dashboards with **visual editor** (add tabs with "+", choose card type), **Styling CSS** (no card_mod), **haptic feedback** (iOS/Android), **URL deep-linking** and **swipe navigation**. Fork of [home-assistant-simple-tabs](https://github.com/agoberg85/home-assistant-simple-tabs).
 
 ![Simple Tabs Card Screenshot](https://raw.githubusercontent.com/agoberg85/home-assistant-simple-tabs/main/simple-tabs-gif.gif)
 
@@ -32,17 +32,17 @@ Subscribe to Youtube channel: https://www.youtube.com/@My_Smart_Home
 1.  Go to the HACS page in your Home Assistant instance.
 2.  Click the three-dot menu in the top right.
 3.  Select "Custom repositories".
-4.  In the "Repository" field, paste the URL of this repository (https://github.com/agoberg85/home-assistant-simple-tabs).
-5.  For "Category", select "Dashboard".
+4.  In the "Repository" field, paste: `https://github.com/silasmariusz/home-assistant-simple-tabs`
+5.  For "Category", select **Frontend** (or Dashboard).
 6.  Click "Add".
-7.  The `simple-tabs-card` will now appear in the HACS Frontend list. Click "Install".
+7.  Find **Fork U-Bubble Simple Tabs** in the Frontend list and click "Install".
 
 ### Manual Installation
 
-1.  Download the `simple-tabs.js` file from the latest [release](https://github.com/agoberg85/home-assistant-simple-tabs/releases).
-2.  Copy the file to the `www` directory in your Home Assistant `config` folder.
-3.  In your Lovelace dashboard, go to "Manage Resources" and add a new resource:
-    - URL: `/local/simple-tabs.js`
+1.  Download `fork_u-bubble_simple_tabs.js` from the latest [release](https://github.com/silasmariusz/home-assistant-simple-tabs/releases).
+2.  Copy it to the `www` directory in your Home Assistant `config` folder.
+3.  In Lovelace, go to "Manage Resources" and add:
+    - URL: `/local/fork_u-bubble_simple_tabs.js` (or `/hacsfiles/fork_u-bubble_simple_tabs/fork_u-bubble_simple_tabs.js` if installed via HACS)
     - Resource Type: `JavaScript Module`
 
 ## Multiple Cards
@@ -76,7 +76,7 @@ The card will automatically handle wrapping them in a vertical stack for you.
 
 | Name | Type | Required? | Description | Default |
 | :--- | :--- | :--- | :--- | :--- |
-| `type` | string | **Required** | `custom:simple-tabs` | |
+| `type` | string | **Required** | `custom:fork-u-bubble-simple-tabs` | |
 | `tabs` | list | **Required** | A list of tab objects to display. See below. | |
 | `alignment` | string | Optional | Justification for the row of tabs. (`start`, `center`, `end`) | `'center'` |
 | `default_tab` | number/list | Optional | Defines the default tab. Can be a static number (1-based) or a list of conditional rules (see Advanced Configuration). | `1` |
@@ -98,6 +98,7 @@ The card will automatically handle wrapping them in a vertical stack for you.
 | `swipe_threshold` | number | Optional | Pixels of movement required to trigger a swipe. | `50` |
 | `remember_tab` | boolean/string | Optional | Remember last selected tab. (`false`, `true`, `'per_device'`) | `false` |
 | `haptic_feedback` | boolean | Optional | Vibration feedback on tab change (mobile only). | `false` |
+| `styling_css` | string | Optional | Custom CSS for the card container (no card_mod needed). | |
 
 ### Tab Object Options
 
@@ -162,7 +163,7 @@ tabs:
 This configuration demonstrates dynamic defaults, user restrictions, and the compact "hide inactive titles" style.
 
 ```yaml
-type: custom:simple-tabs
+type: custom:fork-u-bubble-simple-tabs
 alignment: start
 hide_inactive_tab_titles: true
 default_tab:

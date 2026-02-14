@@ -7,15 +7,13 @@ import serve from 'rollup-plugin-serve';
 const dev = process.env.ROLLUP_WATCH;
 
 export default {
-  input: 'src/simple-tabs.ts',
+  input: 'src/fork_u-bubble_simple_tabs.ts',
   output: {
-    file: 'dist/simple-tabs.js',
+    file: 'dist/fork_u-bubble_simple_tabs.js',
     format: 'es',
     inlineDynamicImports: true,
   },
-  // --- ADD THIS LINE ---
   inlineDynamicImports: true,
-  // --------------------
   plugins: [
     nodeResolve(),
     commonjs(),
