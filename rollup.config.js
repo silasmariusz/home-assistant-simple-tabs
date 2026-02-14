@@ -9,7 +9,7 @@ const dev = process.env.ROLLUP_WATCH;
 export default {
   input: 'src/fork_u-bubble_simple_tabs.ts',
   output: {
-    file: 'dist/fork_u-bubble_simple_tabs.js',
+    file: 'fork_u-bubble_simple_tabs.js',
     format: 'es',
     inlineDynamicImports: true,
   },
