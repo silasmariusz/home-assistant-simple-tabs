@@ -860,6 +860,6 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'custom:fork-u-bubble-simple-tabs',
   name: 'Fork U-Bubble Simple Tabs',
-  preview: true,
+  preview: false,
   description: 'Tabbed card interface for dashboards. Fork with visual editor, styling CSS, haptic and URL support.'
 });
