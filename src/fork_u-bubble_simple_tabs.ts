@@ -143,11 +143,25 @@ export class ForkUBubbleSimpleTabs extends LitElement {
     return document.createElement('fork-u-bubble-simple-tabs-editor') as LovelaceCardEditor;
   }
 
+  /** Preview stubs with different built-in cards (sun.sun is widely available) */
+  private static readonly PREVIEW_STUB_TABS: TabConfig[] = [
+    { title: 'Home', icon: 'mdi:home', id: 'preview1', card: { type: 'entities', entities: ['sun.sun'] } },
+    { title: 'Status', icon: 'mdi:gauge', id: 'preview2', card: { type: 'glance', entities: ['sun.sun'] } },
+    { title: 'Entity', icon: 'mdi:eye', id: 'preview3', card: { type: 'entity', entity: 'sun.sun' } },
+    { title: 'Info', icon: 'mdi:information', id: 'preview4', card: { type: 'markdown', content: '**Simple Tabs**\n\nPreview with random card.' } },
+    { title: 'Entities', icon: 'mdi:format-list-bulleted', id: 'preview5', card: { type: 'entities', entities: ['sun.sun', 'sensor.time'] } },
+    { title: 'Glance', icon: 'mdi:view-dashboard', id: 'preview6', card: { type: 'glance', entities: ['sun.sun', 'sensor.time'] } },
+  ];
+
   static getStubConfig(): Record<string, unknown> {
+    const stubs = ForkUBubbleSimpleTabs.PREVIEW_STUB_TABS;
+    const idx = Math.floor(Math.random() * stubs.length);
+    const selectedTab = stubs[idx];
     return {
       type: 'custom:fork-u-bubble-simple-tabs',
+      'pre-load': true,
       tabs: [
-        { title: 'Tab 1', icon: 'mdi:home', id: 'tab1', card: { type: 'markdown', content: 'Content 1' } },
+        selectedTab,
         { title: 'Tab 2', icon: 'mdi:cog', id: 'tab2', card: { type: 'markdown', content: 'Content 2' } },
       ]
     };
@@ -860,6 +874,6 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: 'custom:fork-u-bubble-simple-tabs',
   name: 'Fork U-Bubble Simple Tabs',
-  preview: false,
+  preview: true,
   description: 'Tabbed card interface for dashboards. Fork with visual editor, styling CSS, haptic and URL support.'
 });
