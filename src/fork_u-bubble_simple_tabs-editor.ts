@@ -335,6 +335,8 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
         while (this._stackEditorHost.firstChild) this._stackEditorHost.removeChild(this._stackEditorHost.firstChild);
         this._stackEditorHost.appendChild(el);
         const onConfigChanged = (ev: Event): void => {
+          ev.stopPropagation();
+          ev.stopImmediatePropagation();
           const detail = (ev as CustomEvent).detail;
           if (!detail?.config || !this._config) return;
           const cards: LovelaceCardConfig[] = detail.config.cards ?? [];
@@ -350,9 +352,10 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
         };
         el.removeEventListener('config-changed', onConfigChanged);
         el.addEventListener('config-changed', onConfigChanged);
-        (el as any).hass = this.hass;
-        (el as any).lovelace = this.lovelace;
-        (el as any).setConfig?.({ type: 'vertical-stack', cards: this._tabCardsToStackCards(tab) });
+        const elAny = el as any;
+        elAny.hass = this.hass;
+        elAny.lovelace = this.lovelace;
+        elAny.setConfig?.({ type: 'vertical-stack', cards: this._tabCardsToStackCards(tab) });
         this._stackEditorReady = true;
       } else {
         (this._stackEditorEl as any).setConfig?.({ type: 'vertical-stack', cards: this._tabCardsToStackCards(tab) });
@@ -472,6 +475,7 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
   }
 
   private _renderEditTab(index: number, tab: TabConfig): TemplateResult {
+    const cardConfig = this._getTabCard(tab);
     return html`
       <div class="edit-tab-panel">
         <div class="global-options" style="margin-bottom: 16px;">
@@ -483,8 +487,19 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
           </div>
           <ha-textfield .label=${'Badge (Jinja)'} .value=${tab.badge || ''} .name=${'badge'} @input=${(e: Event) => this._handleTabChange(e, index)}></ha-textfield>
         </div>
-        <h3 style="margin: 16px 0 8px 0;">Cards (click + to add, scrollable list)</h3>
+        <h3 style="margin: 16px 0 8px 0;">Cards (visual editor)</h3>
+        <p class="field-desc">Click + to add a card from the scrollable list. If you only see code, use the YAML editor below.</p>
         <div id="stack-editor-host" class="stack-editor-host"></div>
+        <details style="margin-top: 16px;">
+          <summary style="cursor: pointer;">Edit cards as YAML (fallback)</summary>
+          <ha-yaml-editor
+            .hass=${this.hass}
+            .name=${'card'}
+            .defaultValue=${stringifyCard(cardConfig)}
+            @value-changed=${(e: Event) => this._handleTabChange(e, index)}
+            style="margin-top: 8px;"
+          ></ha-yaml-editor>
+        </details>
       </div>
     `;
   }
@@ -644,11 +659,17 @@ export class ForkUBubbleSimpleTabsEditor extends LitElement {
     .reorder-btn[disabled] { opacity: 0.3; pointer-events: none; }
     .edit-tab-panel { padding: 0; }
     .stack-editor-host {
-      min-height: 200px;
+      min-height: 50vh;
+      width: 100%;
       border: 1px solid var(--divider-color);
       border-radius: 8px;
-      padding: 8px;
+      padding: 12px;
       background: var(--card-background-color, var(--sidebar-background-color));
+      box-sizing: border-box;
+    }
+    .stack-editor-host > * {
+      width: 100%;
+      min-width: 0;
     }
     .card-block { margin-bottom: 6px; padding: 6px; border: 1px solid var(--divider-color); border-radius: 8px; box-sizing: border-box; overflow: hidden; }
     .card-block-header {
