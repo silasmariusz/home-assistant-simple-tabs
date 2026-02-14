@@ -198,7 +198,7 @@ export class ForkUBubbleSimpleTabs extends LitElement {
   private _triggerHaptic(): void {
     if (!this._config?.haptic_feedback) return;
     try {
-      fireEvent(this, 'haptic', { type: 'light' });
+      fireEvent(this, 'haptic', 'light');
     } catch {}
     if ('vibrate' in navigator) {
       navigator.vibrate(10);

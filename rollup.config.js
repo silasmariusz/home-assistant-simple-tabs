@@ -13,7 +13,6 @@ export default {
     format: 'es',
     inlineDynamicImports: true,
   },
-  inlineDynamicImports: true,
   plugins: [
     nodeResolve(),
     commonjs(),
